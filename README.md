@@ -1,6 +1,6 @@
 <div align="center">
   
-# 🤖 Assistente Inteligente de Estoque 📦
+# 🤖 Assistente Inteligente de Estoque 📦 <br> Aprendendo e Testando Tecnologias com IA
 
 ![Python](https://img.shields.io/badge/🐍_Python-3.12-blue?style=for-the-badge&logo=python)
 ![Streamlit](https://img.shields.io/badge/🌐_Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)
@@ -97,5 +97,5 @@ Isso significa que, ao recarregar a página (F5) ou reiniciar a aplicação, **t
   > **Nota:** As consultas funcionam baseadas no banco de dados SQLite `estoque.db` presente na raiz da aplicação. O modelo fará todo o trabalho pesado de transformar a sua pergunta em uma consulta SQL válida por baixo dos panos! ⚙️
 
   <br/>
-  Feito com ❤orgulho, muito Python e IA! ✨
+  Feito com orgulho e muito Python e IA! 😃✨
 </div>
