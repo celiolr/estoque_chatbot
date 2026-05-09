@@ -94,7 +94,7 @@ Isso significa que, ao recarregar a página (F5) ou reiniciar a aplicação, **t
 <div align="center">
   <br/>
   
-  > **Nota:** As consultas funcionam baseadas no banco de dados SQLite `estoque.db` presente na raiz da aplicação. O modelo fará todo o trabalho pesado de transformar a sua pergunta em uma consulta SQL válida por baixo dos panos! ⚙️
+  > **Nota:** As consultas funcionam baseadas no banco de dados SQLite `stock_database_teste.db` presente na raiz da aplicação. O modelo fará todo o trabalho pesado de transformar a sua pergunta em uma consulta SQL válida por baixo dos panos! ⚙️
 
   <br/>
   Feito com orgulho e muito Python e IA! 😃✨
