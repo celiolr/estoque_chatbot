@@ -2,11 +2,11 @@
   
 # 🤖 Assistente Inteligente de Estoque 📦 <br> Aprendendo e Testando Tecnologias com IA 
 
-![Python](https://img.shields.io/badge/🐍_Python-3.12-3776AB)
-![Streamlit](https://img.shields.io/badge/🌐_Streamlit-FF4B4B)
-![LangChain](https://img.shields.io/badge/🦜_LangChain-1C3C3C)
-![OpenAI](https://img.shields.io/badge/🧠_OpenAI-412991)
-![SQLite](https://img.shields.io/badge/🗄️_SQLite-003B57)
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?logo=streamlit&logoColor=white)
+![LangChain](https://img.shields.io/badge/LangChain-1C3C3C?logo=langchain&logoColor=white)
+![OpenAI](https://img.shields.io/badge/OpenAI-000000?logo=openaigym&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-0F80CC?logo=sqlite&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 </div>
 
@@ -134,5 +134,5 @@ Este aplicativo foi desenvolvido com foco em testes, presentation de portfólio 
 Isso significa que, ao recarregar a página (F5) ou reiniciar a aplicação, **todas as mensagens anteriores serão apagadas**. O agente extrairá sempre os dados mais recentes do banco a cada pergunta, mas não lembrará do contexto passado em novas abas.
 
 <div align="center">
-  Feito com orgulho 😃 muito Python e IA! ✨
+  Feito com ❤️ com muito Python e IA! ✨
 </div>
