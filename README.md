@@ -6,6 +6,7 @@
 ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?logo=streamlit&logoColor=white)
 ![LangChain](https://img.shields.io/badge/LangChain-1C3C3C?logo=langchain&logoColor=white)
 ![OpenAI](https://img.shields.io/badge/OpenAI-000000?logo=openaigym&logoColor=white)
+![Groq](https://img.shields.io/badge/Groq-F55036?logo=groq&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-0F80CC?logo=sqlite&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 </div>
@@ -21,7 +22,7 @@ Um chatbot interativo poderoso e inteligente que facilita a consulta e análise 
 Antes de decolar 🚀, você vai precisar de algumas coisas instaladas e configuradas:
 
 - 🐍 **Python 3.12** (Adicionado às variáveis de ambiente / `PATH`)
-- 🔑 **Chave de API da OpenAI** (Para dar vida ao nosso assistente)
+- 🔑 **Chave de API (OpenAI ou Groq)** (Para dar vida ao nosso assistente)
 - 💻 **Sistema Windows** (Para utilizar o script automatizado).
 ---
 
@@ -33,18 +34,25 @@ Pensamos em tudo! O projeto conta com um script automatizado que prepara o ambie
 Abra o **PowerShell** na raiz do projeto e execute a mágica:
 
 ```powershell
-.\update_project.ps1
+.\setup.ps1
 ```
 > 💡 *O script cria o ambiente virtual, atualiza as ferramentas-base, instala todas as dependências do `requirements.txt` e ainda cria o arquivo `.env`.*
 
 > Nota: Se o Sistema Operacional não for o Windows, esse script deve ser ajustado para o Sistema Operacional destino.
 
 ### 2. Configurando as Chaves 🗝️
-1. Abra o arquivo `.env` (criado automaticamente pelo script).
-2. Substitua o valor padrão pela sua chave real da OpenAI:
-   ```env
-   OPENAI_API_KEY='sk-SuaChaveDaOpenAiAqui...'
-   ```
+Abra o arquivo `.env` (criado automaticamente pelo script) na raiz do projeto. O assistente suporta os provedores da OpenAI e Groq. Você precisa preencher pelo menos UMA dessas chaves para o aplicativo funcionar.
+
+Substitua os valores de exemplo pelas suas chaves reais:
+```env
+OPENAI_API_KEY='sk-SuaChaveDaOpenAiAqui...'
+GROQ_API_KEY='gsk_SuaChaveDoGroqAqui...'
+```
+
+#### 🔗 Onde consigo essas chaves gratuitamente?
+Se você ainda não tem as chaves de API, basta criar uma conta nas plataformas abaixo para gerar a sua:
+*   **[Criar chave da OpenAI](https://platform.openai.com/api-keys)** (Gera acesso aos modelos GPT-4, GPT-3.5 e outros)
+*   **[Criar chave da Groq](https://console.groq.com/keys)** (Gera acesso aos modelos Llama 3 e outros)
 
 ### 3. Estrutura do Projeto 📁
 Para você se familiarizar com os arquivos do nosso assistente:
@@ -58,20 +66,25 @@ estoque_chatbot/
 ├── stock_database_teste.db      # Banco de dados SQLite utilizado nas consultas
 ├── README.md                    # Esta documentação!
 ├── requirements.txt             # Dependências e bibliotecas do projeto (LangChain, Streamlit, etc)
-└── update_project.ps1           # Script PowerShell para preparar tudo
+└── setup.ps1                    # Script PowerShell para preparar tudo
 ```
 ---
 
-## 💻 Como Executar ▶️
+## 💻 Como Usar ▶️
 
-Com o motor aquecido, hora de rodar a interface web interativa do Streamlit:
+Com o motor aquecido e as chaves no lugar, hora de rodar a interface web interativa do Streamlit:
 
 1. No terminal (com o ambiente `venv` ativado), mande o comando:
    ```bash
    streamlit run app.py
    ```
 2. 🌐 Uma nova aba abrirá instantaneamente no seu navegador! (Se não abrir, clique no link `http://localhost:8501` no terminal).
-3. 🎛️ **Bônus:** Na aba lateral (Sidebar), você pode alternar facilmente entre as versões dos modelos de linguagem (como *gpt-4o-mini*, *gpt-4*).
+
+#### 🎛️ Navegação e Uso da IA
+Ao abrir a página, você verá uma barra lateral de configurações.
+*   **Passo 1:** Selecione o **Provedor de IA** que deseja utilizar (ex: `OpenAI` ou `Groq`). O aplicativo só mostrará as opções cujas chaves você preencheu no `.env`!
+*   **Passo 2:** Após escolher o provedor, a lista de modelos se atualizará automaticamente. Selecione o **Modelo LLM** desejado (ex: `gpt-4o-mini` para OpenAI ou `Llama 3 70B` para Groq).
+*   **Passo 3:** Faça sua pergunta no campo de texto principal da página e veja a mágica acontecer!
 
 ---
 

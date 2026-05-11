@@ -1,17 +1,55 @@
 import os
+import time
 import streamlit as st
 from decouple import config
+from dotenv import load_dotenv
 
 # Database & SQL imports
-from langchain import hub
-from langchain.agents import create_tool_calling_agent, AgentExecutor
+from langchain.agents import create_react_agent, AgentExecutor
 from langchain.prompts import PromptTemplate
 from langchain_community.utilities.sql_database import SQLDatabase
 from langchain_community.agent_toolkits.sql.toolkit import SQLDatabaseToolkit
+
+# Providers
 from langchain_openai import ChatOpenAI
+from langchain_groq import ChatGroq
+
+import warnings
+warnings.filterwarnings("ignore") # Ignorando todos warnings chatos temporariamente do console
 
 # Load environment variables
-os.environ['OPENAI_API_KEY'] = config('OPENAI_API_KEY')
+load_dotenv()
+
+# Função para checar se a chave é válida
+def is_valid_key(key_val):
+    if not key_val:
+        return False
+    key_val = key_val.strip().strip("'").strip('"')
+    if not key_val:
+        return False
+    
+    val_lower = key_val.lower()
+    placeholders = ['sua-chave', 'suachave', 'sk-suachave']
+    for p in placeholders:
+        if p in val_lower:
+            return False
+            
+    return True
+
+# Lendo as chaves com fallback
+openai_raw = config('OPENAI_API_KEY', default=os.getenv('OPENAI_API_KEY'))
+groq_raw = config('GROQ_API_KEY', default=os.getenv('GROQ_API_KEY'))
+
+# Lista de provedores válidos
+provider_options = []
+
+if is_valid_key(groq_raw):
+    os.environ['GROQ_API_KEY'] = groq_raw.strip("'").strip('"')
+    provider_options.append('Groq')
+
+if is_valid_key(openai_raw):
+    os.environ['OPENAI_API_KEY'] = openai_raw.strip("'").strip('"')
+    provider_options.append('OpenAI')
 
 st.set_page_config(
     page_title='Assistente de Estoque',
@@ -25,62 +63,146 @@ st.title('🤖 Assistente Inteligente de Estoque')
 with st.sidebar:
     st.header('Configurações')
     
-    # Model Selection
-    model_options = [
-        'gpt-3.5-turbo',
-        'gpt-4',
-        'gpt-4-turbo',
-        'gpt-4o-mini',
-        'gpt-4o',
-    ]
-    selected_model = st.selectbox(
+    if not provider_options:
+        st.error("Nenhuma chave de API válida encontrada! Verifique seu arquivo .env.")
+        st.stop()
+
+    selected_provider = st.selectbox(
+        label='Selecione o provedor de IA',
+        options=provider_options
+    )
+    
+    # Model Selection based on Provider
+    if selected_provider == 'Groq':
+        model_options = {
+            'llama-3.1-8b-instant': 'Llama 3 8B 💸',
+            'llama-3.3-70b-versatile': 'Llama 3 70B 💸💸',
+        }
+        default_index = 0 # llama-3.1-8b
+    elif selected_provider == 'OpenAI':
+        model_options = {
+            'gpt-4o-mini': 'gpt-4o-mini 💸',
+            'gpt-3.5-turbo': 'gpt-3.5-turbo 💸',
+            'gpt-4o': 'gpt-4o 💸💸',
+            'gpt-4-turbo': 'gpt-4-turbo 💸💸💸',
+            'gpt-4': 'gpt-4 💸💸💸💸',
+        }
+        default_index = 0 # gpt-4o-mini
+        
+    model_ids = list(model_options.keys())
+    
+    selected_model_id = st.selectbox(
         label='Selecione o modelo LLM',
-        options=model_options,
-        index=4 # Default to gpt-4o-mini
+        options=model_ids,
+        format_func=lambda x: model_options[x],
+        index=default_index
     )
     
     st.markdown('### Sobre')
-    st.markdown('Este agente consulta um banco de dados de estoque utilizando um modelo GPT e apresenta as respostas em um formato de chat interativo.')
+    st.markdown('Este agente consulta um banco de dados de estoque utilizando um modelo de IA e apresenta as respostas em um formato de chat interativo.')
     
 # --- Initialize DB Agent System ---
-def query_db_agent(model_name, user_question):
-    model = ChatOpenAI(model=model_name)
+def query_db_agent(provider_name, model_name, user_question):
+    # Initialize the correct LLM based on provider
+    model = None
     try:
-        db = SQLDatabase.from_uri('sqlite:///stock_database_teste.db')
+        if provider_name == 'OpenAI':
+            model = ChatOpenAI(model=model_name)
+        elif provider_name == 'Groq':
+            model = ChatGroq(model=model_name)
+    except Exception as e:
+        return f"Erro ao inicializar o modelo {model_name}. Verifique se a chave de API (API KEY) do provedor {provider_name} está configurada no .env. Detalhes: {e}"
+
+    if model is None:
+        return "Erro: Modelo não pôde ser inicializado."
+
+    try:
+        # OTIMIZAÇÃO DE TOKENS: Limitando a visão do schema para evitar o retorno de DDL gigante
+        db = SQLDatabase.from_uri(
+            'sqlite:///stock_database_teste.db',
+            sample_rows_in_table_info=0, # Define para ZERO para não trazer dados reais no prompt de schema, poupando muitos tokens
+            include_tables=[
+                'products_product', 
+                'inflows_inflow', 
+                'outflows_outflow', 
+                'brands_brand', 
+                'categories_category', 
+                'suppliers_supplier'
+            ] # Ignora fisicamente todas as tabelas de sistema do Django/Outros
+        )
+        
         toolkit = SQLDatabaseToolkit(db=db, llm=model)
         
-        # Usando o Tool Calling Agent em vez de ReAct Agent
-        system_message = hub.pull('hwchase17/openai-tools-agent')
+        custom_system_prompt = '''
+        Answer the following questions as best you can. You have access to the following tools:
 
-        agent = create_tool_calling_agent(
+        {tools}
+
+        Use the following format:
+
+        Question: the input question you must answer
+        Thought: you should always think about what to do
+        Action: the action to take, should be one of [{tool_names}]
+        Action Input: the input to the action
+        Observation: the result of the action
+        ... (this Thought/Action/Action Input/Observation can repeat N times)
+        Thought: I now know the final answer
+        Final Answer: A resposta final para a pergunta original do usuário.
+
+        IMPORTANT RULES FOR DATABASE QUERIES:
+        1. First, use `sql_db_schema` to see the schema of relevant tables. DO NOT use `sql_db_list_tables` as you already only have access to business tables.
+        2. Then, build and run your query using `sql_db_query`.
+        3. Se uma consulta SQL retornar vazia (ex: []), NÃO repita a mesma consulta. Isso significa que o filtro (WHERE) foi muito restrito ou você presumiu valores que não existem. Ajuste ou afrouxe os seus filtros para continuar explorando os dados.
+
+        BUSINESS RULES:
+        - Margem de Lucro (%): Quando questionado sobre a margem de lucro, calcule como `((selling_price * 1.0 / cost_price) - 1) * 100`. Não confunda com lucro nominal (que é apenas `selling_price - cost_price`). DICA: No SQLite, force a conversão para float multiplicando por 1.0 para evitar divisão inteira truncada.
+
+        FORMATTING RULES FOR FINAL ANSWER:
+        - ALWAYS respond in Brazilian Portuguese.
+        - MANDATÓRIO: A sua resposta final DEVE SEMPRE começar com um título em Markdown (usando ##) que resuma o assunto da pergunta. Exemplo: Se perguntarem "quais itens existem", comece com "## Itens Disponíveis no Estoque".
+        - Se a pergunta for genérica (ex: "Quais itens existem?", "Liste os produtos"), use uma lista de tópicos (bullet points) para cada item encontrado.
+        - Use formatação de tabela Markdown APENAS se o usuário pedir explicitamente um "relatório" ou "tabela".
+        - Para valores monetários, SEMPRE formate no padrão brasileiro: "R$ 9.999,00".
+        - Para percentuais, SEMPRE formate no padrão brasileiro: "99,99%".
+        - Quando usar tabelas Markdown com números ou valores monetários, VOCÊ DEVE alinhar essas colunas numéricas à direita utilizando `---:` na linha de separação. 
+          Exemplo de formatação OBRIGATÓRIA:
+          | Nome do Produto | Preço de Custo | Preço de Venda | Qtd |
+          |:---|---:|---:|---:|
+          | Item Exemplo | R$ 10,00 | R$ 20,00 | 5 |
+
+        CRITICAL INSTRUCTION FOR LLAMA/GROQ: 
+        If you already have the data you need from the Observation, DO NOT call `Action: None`. 
+        You MUST IMMEDIATELY use `Thought: I now know the final answer` followed by `Final Answer: ...`.
+        Never use `Action: None`.
+        When giving your final answer, do NOT miss the "Final Answer: " prefix.
+
+        Begin!
+
+        Question: {input}
+        Thought:{agent_scratchpad}
+        '''
+        
+        prompt_template = PromptTemplate.from_template(custom_system_prompt)
+
+        agent = create_react_agent(
             llm=model,
             tools=toolkit.get_tools(),
-            prompt=system_message,
+            prompt=prompt_template,
         )
 
         agent_executor = AgentExecutor(
             agent=agent,
             tools=toolkit.get_tools(),
-            verbose=True,
+            verbose=True, 
+            # O parâmetro abaixo corrige o bug do Llama ficar em loop enviando Action: None
+            handle_parsing_errors="Formato inválido! Se você já sabe a resposta final, não envie 'Action:'. Apenas escreva 'Thought: I now know the final answer' seguido de 'Final Answer: [sua resposta]'.",
+            max_iterations=12, # Aumentado de 8 para 12 para dar fôlego ao modelo nas correções
         )
-
-        prompt_str = '''
-        Use as ferramentas necessárias para responder perguntas relacionadas ao
-        estoque de produtos. Você fornecerá insights sobre produtos, preços, 
-        reposição de estoque e relatórios conforme solicitado pelo usuário.
-        A resposta final deve ter uma formatação amigável de visualização para o usuário.
-        Se forem vários itens colocar na vertical em formato de lista com bullet.
-        Sempre inclua um título explicando o que é a resposta.
-        Sempre responda em português brasileiro.
-        Pergunta: {q}
-        '''
-        prompt_template = PromptTemplate.from_template(prompt_str)
-        formatted_prompt = prompt_template.format(q=user_question)
         
-        output = agent_executor.invoke({'input': formatted_prompt})
+        output = agent_executor.invoke({'input': user_question})
         return output.get('output')
     except Exception as e:
-        return f"Erro ao acessar o banco de dados de estoque: {e}"
+        return f"Erro durante o processamento do agente com banco de dados: {e}"
 
 # --- Chat Interface ---
 if 'messages' not in st.session_state:
@@ -96,8 +218,16 @@ if question:
     st.chat_message('user').write(question)
     st.session_state.messages.append({'role': 'user', 'content': question})
 
-    with st.spinner('Consultando o banco de dados...'):
-        response = query_db_agent(selected_model, question)
+    start_time = time.time() # Início da cronometragem
+    
+    with st.spinner(f'Consultando o banco de dados usando {selected_provider}...'):
+        response = query_db_agent(selected_provider, selected_model_id, question)
+
+        end_time = time.time() # Fim da cronometragem
+        elapsed_time = end_time - start_time
+        
+        # Opcional: mostrar uma mensagem de sucesso discreta com o tempo logo acima da resposta
+        st.success(f'Tempo gasto no processamento: {elapsed_time:.2f} segundos')
 
         st.chat_message('ai').write(response)
         st.session_state.messages.append({'role': 'ai', 'content': response})
