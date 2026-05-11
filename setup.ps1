@@ -13,7 +13,8 @@ pip install -r requirements.txt
 Write-Host "Verificando se o arquivo .env existe..." -ForegroundColor DarkGreen
 if (-not (Test-Path ".env")) {
     Set-Content -Path ".env" -Value "OPENAI_API_KEY='sk-SuaChaveDaOpenAiAqui...'"
-    Write-Host "Arquivo .env criado com sucesso. Por favor, adicione sua chave de API." -ForegroundColor Yellow
+    Set-Content -Path ".env" -Value "GROQ_API_KEY='gsk_SuaChaveDoGroqAqui...'"
+    Write-Host "Arquivo .env criado com sucesso. Por favor, adicione suas chaves de APIs." -ForegroundColor Yellow
 } else {
     Write-Host "Arquivo .env ja existe." -ForegroundColor Cyan
 }
