@@ -7,6 +7,7 @@
 ![LangChain](https://img.shields.io/badge/LangChain-1C3C3C?logo=langchain&logoColor=white)
 ![OpenAI](https://img.shields.io/badge/OpenAI-000000?logo=openaigym&logoColor=white)
 ![Groq](https://img.shields.io/badge/Groq-F55036?logo=groq&logoColor=white)
+![Ollama](https://img.shields.io/badge/Ollama-23262A?logo=ollama&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-0F80CC?logo=sqlite&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 </div>
@@ -22,8 +23,10 @@ Um chatbot interativo poderoso e inteligente que facilita a consulta e análise 
 Antes de decolar 🚀, você vai precisar de algumas coisas instaladas e configuradas:
 
 - 🐍 **Python 3.12** (Adicionado às variáveis de ambiente / `PATH`)
-- 🔑 **Chave de API (OpenAI ou Groq)** (Para dar vida ao nosso assistente)
+- 🔑 **Chave de API (Opcional)**: Para usar os provedores online (OpenAI ou Groq).
 - 💻 **Sistema Windows** (Para utilizar o script automatizado).
+- 🦙 **Ollama (Opcional)**: Para rodar os modelos de IA localmente (offline).
+
 ---
 
 ## 🚀 Instalação e Configuração ⚙️
@@ -40,8 +43,10 @@ Abra o **PowerShell** na raiz do projeto e execute a mágica:
 
 > Nota: Se o Sistema Operacional não for o Windows, esse script deve ser ajustado para o Sistema Operacional destino.
 
-### 2. Configurando as Chaves 🗝️
-Abra o arquivo `.env` (criado automaticamente pelo script) na raiz do projeto. O assistente suporta os provedores da OpenAI e Groq. Você precisa preencher pelo menos UMA dessas chaves para o aplicativo funcionar.
+### 2. Configurando as Chaves e Modelos 🗝️
+
+#### 🌐 Provedores Online (OpenAI e Groq)
+Abra o arquivo `.env` (criado automaticamente pelo script) na raiz do projeto. Para usar os provedores online, você precisa preencher pelo menos UMA dessas chaves.
 
 Substitua os valores de exemplo pelas suas chaves reais:
 ```env
@@ -49,10 +54,19 @@ OPENAI_API_KEY='sk-SuaChaveDaOpenAiAqui...'
 GROQ_API_KEY='gsk_SuaChaveDoGroqAqui...'
 ```
 
-#### 🔗 Onde consigo essas chaves gratuitamente?
-Se você ainda não tem as chaves de API, basta criar uma conta nas plataformas abaixo para gerar a sua:
-*   **[Criar chave da OpenAI](https://platform.openai.com/api-keys)** (Gera acesso aos modelos GPT-4, GPT-3.5 e outros)
-*   **[Criar chave da Groq](https://console.groq.com/keys)** (Gera acesso aos modelos Llama 3 e outros)
+*   **[Criar chave da OpenAI](https://platform.openai.com/api-keys)** (Gera acesso aos modelos GPT-4, GPT-3.5)
+*   **[Criar chave da Groq](https://console.groq.com/keys)** (Gera acesso ultra-rápido aos modelos Llama 3, Mixtral)
+
+#### 🦙 Provedor Offline (Ollama)
+O Ollama permite que você rode modelos de IA diretamente no seu computador, sem precisar de internet ou chaves de API.
+
+1.  **Instale o Ollama:** Faça o download do aplicativo no **[site oficial do Ollama](https://ollama.com/)** e instale-o.
+2.  **Baixe os modelos:** Com o Ollama instalado, abra o seu terminal (CMD ou PowerShell) e baixe os modelos que deseja usar. Exemplo:
+    ```bash
+    ollama pull phi3:mini
+    ollama pull gemma
+    ```
+3.  **Detecção Automática:** O nosso aplicativo é inteligente! Ao iniciar, ele verifica se o Ollama está rodando no seu computador. Se estiver, a opção "Ollama (Offline)" aparecerá automaticamente no seletor de provedores, e a lista de modelos será preenchida dinamicamente com todos os modelos que você já baixou. Não é preciso editar o código, exceto se o Ollama estiver executando em porta diferente da padrão http://localhost:11434/ !
 
 ### 3. Estrutura do Projeto 📁
 Para você se familiarizar com os arquivos do nosso assistente:
@@ -82,9 +96,11 @@ Com o motor aquecido e as chaves no lugar, hora de rodar a interface web interat
 
 #### 🎛️ Navegação e Uso da IA
 Ao abrir a página, você verá uma barra lateral de configurações.
-*   **Passo 1:** Selecione o **Provedor de IA** que deseja utilizar (ex: `OpenAI` ou `Groq`). O aplicativo só mostrará as opções cujas chaves você preencheu no `.env`!
-*   **Passo 2:** Após escolher o provedor, a lista de modelos se atualizará automaticamente. Selecione o **Modelo LLM** desejado (ex: `gpt-4o-mini` para OpenAI ou `Llama 3 70B` para Groq).
+*   **Passo 1:** Selecione o **Provedor de IA** que deseja utilizar (ex: `OpenAI`, `Groq` ou `Ollama (Offline)`). O aplicativo só mostrará as opções online cujas chaves você preencheu no `.env` e a opção offline se o Ollama estiver rodando!
+*   **Passo 2:** Após escolher o provedor, a lista de modelos se atualizará automaticamente. Selecione o **Modelo LLM** desejado.
 *   **Passo 3:** Faça sua pergunta no campo de texto principal da página e veja a mágica acontecer!
+
+> ⚠️ **Importante para o Ollama:** Certifique-se de que o aplicativo do Ollama está rodando minimizado no seu computador antes de fazer uma consulta com um modelo offline.
 
 ---
 

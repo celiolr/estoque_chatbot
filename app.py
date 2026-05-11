@@ -1,5 +1,6 @@
 import os
 import time
+import requests
 import streamlit as st
 from decouple import config
 from dotenv import load_dotenv
@@ -13,6 +14,7 @@ from langchain_community.agent_toolkits.sql.toolkit import SQLDatabaseToolkit
 # Providers
 from langchain_openai import ChatOpenAI
 from langchain_groq import ChatGroq
+from langchain_community.chat_models import ChatOllama
 
 import warnings
 warnings.filterwarnings("ignore") # Ignorando todos warnings chatos temporariamente do console
@@ -36,12 +38,46 @@ def is_valid_key(key_val):
             
     return True
 
+# Função para checar se o Ollama está rodando localmente
+def is_ollama_running():
+    try:
+        # A API padrão do Ollama responde na porta 11434
+        response = requests.get('http://localhost:11434/', timeout=1)
+        if response.status_code == 200:
+            return True
+        return False
+    except requests.exceptions.RequestException:
+        return False
+
+# Função para buscar dinamicamente os modelos instalados no Ollama
+def get_ollama_models():
+    try:
+        response = requests.get('http://localhost:11434/api/tags', timeout=2)
+        if response.status_code == 200:
+            data = response.json()
+            models_list = data.get('models', [])
+            
+            # Retorna um dicionário {id_modelo: nome_de_exibicao}
+            model_dict = {}
+            for m in models_list:
+                model_name = m.get('name')
+                model_dict[model_name] = f"{model_name.capitalize()} 🦙"
+                
+            return model_dict
+        return {}
+    except requests.exceptions.RequestException:
+        return {}
+
 # Lendo as chaves com fallback
 openai_raw = config('OPENAI_API_KEY', default=os.getenv('OPENAI_API_KEY'))
 groq_raw = config('GROQ_API_KEY', default=os.getenv('GROQ_API_KEY'))
 
 # Lista de provedores válidos
 provider_options = []
+
+# Checa ativamente se o Ollama está instalado e rodando
+if is_ollama_running():
+    provider_options.append('Ollama (Offline)')
 
 if is_valid_key(groq_raw):
     os.environ['GROQ_API_KEY'] = groq_raw.strip("'").strip('"')
@@ -64,7 +100,7 @@ with st.sidebar:
     st.header('Configurações')
     
     if not provider_options:
-        st.error("Nenhuma chave de API válida encontrada! Verifique seu arquivo .env.")
+        st.error("Nenhuma IA disponível! Configure uma chave no arquivo .env ou inicie o aplicativo Ollama no seu PC.")
         st.stop()
 
     selected_provider = st.selectbox(
@@ -88,6 +124,15 @@ with st.sidebar:
             'gpt-4': 'gpt-4 💸💸💸💸',
         }
         default_index = 0 # gpt-4o-mini
+    elif selected_provider == 'Ollama (Offline)':
+        # Busca a lista real de modelos baixados no PC do usuário
+        model_options = get_ollama_models()
+        
+        # Fallback caso a API devolva vazio por algum motivo
+        if not model_options:
+            model_options = {'llama3:latest': 'Llama 3 🦙'}
+            
+        default_index = 0
         
     model_ids = list(model_options.keys())
     
@@ -97,6 +142,9 @@ with st.sidebar:
         format_func=lambda x: model_options[x],
         index=default_index
     )
+    
+    if selected_provider == 'Ollama (Offline)':
+        st.success("✅ Ollama detectado e conectado!")
     
     st.markdown('### Sobre')
     st.markdown('Este agente consulta um banco de dados de estoque utilizando um modelo de IA e apresenta as respostas em um formato de chat interativo.')
@@ -110,8 +158,11 @@ def query_db_agent(provider_name, model_name, user_question):
             model = ChatOpenAI(model=model_name)
         elif provider_name == 'Groq':
             model = ChatGroq(model=model_name)
+        elif provider_name == 'Ollama (Offline)':
+            # ChatOllama usa a API REST local que roda por padrão na porta 11434
+            model = ChatOllama(model=model_name)
     except Exception as e:
-        return f"Erro ao inicializar o modelo {model_name}. Verifique se a chave de API (API KEY) do provedor {provider_name} está configurada no .env. Detalhes: {e}"
+        return f"Erro ao inicializar o modelo {model_name}. Detalhes: {e}"
 
     if model is None:
         return "Erro: Modelo não pôde ser inicializado."
@@ -170,7 +221,7 @@ def query_db_agent(provider_name, model_name, user_question):
           |:---|---:|---:|---:|
           | Item Exemplo | R$ 10,00 | R$ 20,00 | 5 |
 
-        CRITICAL INSTRUCTION FOR LLAMA/GROQ: 
+        CRITICAL INSTRUCTION FOR LLAMA/GROQ/OLLAMA:
         If you already have the data you need from the Observation, DO NOT call `Action: None`. 
         You MUST IMMEDIATELY use `Thought: I now know the final answer` followed by `Final Answer: ...`.
         Never use `Action: None`.
